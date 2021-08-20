@@ -6,9 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/smtp"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 type User struct {
@@ -36,14 +40,50 @@ func forgotPasswordAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Check the array of emails
 	if contains(emails, user.Email) {
-		fmt.Println("Email exists, check your email!")
-		// func sendMail(user.Email) {}
+		fmt.Println("Email exists in our record, check your email!")
+		sendMail(user.Email)
+
 		json.NewEncoder(w).Encode(user)
 	} else {
 		fmt.Println("Email does not exist!")
 		return
 	}
 
+}
+
+func sendMail(email string) {
+
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	from := "blessedmadukoma@gmail.com"
+	password := os.Getenv("PASSWD")
+
+	// toList is list of email address that email is to be sent.
+	toList := []string{email}
+
+	host := "smtp.gmail.com"
+
+	port := "587"
+
+	// Test run OTP
+	OTP := 1234
+
+	msg := "Hello " + email + ". This is you OTP: " + strconv.Itoa(OTP)
+
+	body := []byte(msg)
+
+	auth := smtp.PlainAuth("", from, password, host)
+
+	err := smtp.SendMail(host+":"+port, auth, from, toList, body)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Successfully sent mail")
 }
 
 func contains(s []string, str string) bool {
